@@ -8,10 +8,10 @@ import (
 	"github.com/SeerUK/assert"
 )
 
-func TestCallbackNoCode(t *testing.T) {
+func TestConnectGitHubNoCode(t *testing.T) {
 	w := httptest.NewRecorder()
 
-	Callback(w, httptest.NewRequest("", "/callback", nil))
+	ConnectGitHub(w, httptest.NewRequest("", "/connect/github", nil))
 
 	assert.Equal(t, w.Code, http.StatusBadRequest)
 }

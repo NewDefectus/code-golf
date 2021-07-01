@@ -20,15 +20,15 @@ var config = oauth2.Config{
 	Endpoint:     github.Endpoint,
 }
 
-// /callback/dev exists because GitHub doesn't support multiple URLs.
+// /connect/github/dev exists because GitHub doesn't support multiple URLs.
 
-// CallbackDev serves GET /callback/dev
-func CallbackDev(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "https://localhost/callback?"+r.URL.RawQuery, http.StatusSeeOther)
+// ConnectGitHubDev serves GET /connect/github/dev
+func ConnectGitHubDev(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "https://localhost/connect/github?"+r.URL.RawQuery, http.StatusSeeOther)
 }
 
-// Callback serves GET /callback
-func Callback(w http.ResponseWriter, r *http.Request) {
+// ConnectGitHub serves GET /connect/github
+func ConnectGitHub(w http.ResponseWriter, r *http.Request) {
 	var user struct {
 		ID    int
 		Login string

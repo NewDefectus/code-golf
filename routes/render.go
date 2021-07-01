@@ -294,7 +294,7 @@ func render(w http.ResponseWriter, r *http.Request, name string, data interface{
 		// Shallow copy because we want to modify a string.
 		config := config
 
-		config.RedirectURL = "https://code.golf/callback"
+		config.RedirectURL = "https://code.golf/connect/github"
 
 		if Config.Dev {
 			config.RedirectURL += "/dev"
