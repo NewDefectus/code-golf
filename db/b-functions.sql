@@ -45,6 +45,39 @@ CREATE TYPE save_solution_ret AS (
     old_chars_rank  int
 );
 
+CREATE FUNCTION login(
+    type oauth, id int, login text, country char(2), time_zone text
+) RETURNS uuid AS $$
+#variable_conflict use_variable
+DECLARE
+    golfer_id int;
+    ret       uuid;
+BEGIN
+    SELECT oauths.golfer_id INTO golfer_id
+        FROM oauths
+        WHERE oauths.id   = id
+          AND oauths.type = type;
+
+    IF golfer_id IS NULL THEN
+        IF type != 'github' THEN
+            RAISE EXCEPTION 'Login is currently only possible with GitHub';
+        END IF;
+        INSERT INTO golfers (login, country, time_zone)
+             VALUES         (login, country, time_zone)
+            RETURNING golfers.id INTO golfer_id;
+        
+        INSERT INTO oauths (golfer_id, id, type, username)
+                 VALUES    (golfer_id, id, type,    login);
+    ELSE
+        UPDATE golfers SET country = COALESCE(golfers.country, country),
+                         time_zone = COALESCE(golfers.time_zone, time_zone)
+                WHERE golfers.id = golfer_id;
+    END IF;
+    INSERT INTO sessions (golfer_id) VALUES (golfer_id) RETURNING sessions.id INTO ret;
+    return ret;
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE FUNCTION save_solution(
     bytes int, chars int, code text, hole hole, lang lang, golfer_id int
 ) RETURNS save_solution_ret AS $$

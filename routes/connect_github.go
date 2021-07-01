@@ -61,7 +61,7 @@ func ConnectGitHub(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err := session.Database(r).QueryRow(
-			`SELECT COALESCE((SELECT id FROM golfers WHERE login = $1), COUNT(*) + 1) FROM golfers`,
+			`SELECT COALESCE((SELECT id FROM oauths WHERE type = 'github' AND username = $1), COUNT(*) + 1) FROM oauths`,
 			user.Login,
 		).Scan(&user.ID); err != nil {
 			panic(err)
@@ -98,15 +98,7 @@ func ConnectGitHub(w http.ResponseWriter, r *http.Request) {
 
 	// Only replace NULL countries and time_zones, never user chosen ones.
 	if err := session.Database(r).QueryRow(
-		`WITH golfer AS (
-		    INSERT INTO golfers (id, login, country, time_zone)
-		         VALUES         ($1,    $2,      $3,        $4)
-		    ON CONFLICT         (id)
-		  DO UPDATE SET login = excluded.login,
-		              country = COALESCE(golfers.country,   excluded.country),
-		            time_zone = COALESCE(golfers.time_zone, excluded.time_zone)
-		      RETURNING id
-		) INSERT INTO sessions (golfer_id) SELECT * FROM golfer RETURNING id`,
+		`SELECT login('github', $1, $2, $3, $4)`,
 		user.ID, user.Login, country, timeZone,
 	).Scan(&cookie.Value); err != nil {
 		panic(err)

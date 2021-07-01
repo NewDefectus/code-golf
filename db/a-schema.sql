@@ -60,7 +60,7 @@ CREATE TABLE ideas (
 );
 
 CREATE TABLE golfers (
-    id           int       SERIAL PRIMARY KEY,
+    id           SERIAL    PRIMARY KEY,
     admin        bool      NOT NULL DEFAULT false,
     sponsor      bool      NOT NULL DEFAULT false,
     login        citext    NOT NULL UNIQUE,
@@ -79,10 +79,10 @@ CREATE TABLE oauths (
     avatar    text,
     golfer_id int   NOT NULL REFERENCES golfers(id) ON DELETE CASCADE,
     id        int   NOT NULL,
-    public    bool  NOT NULL,
+    public    bool  NOT NULL DEFAULT false,
     type      oauth NOT NULL,
     username  text  NOT NULL,
-    PRIMARY KEY(golfer_id, type)
+    PRIMARY KEY(id, type)
 );
 
 CREATE TABLE sessions (
@@ -201,11 +201,13 @@ CREATE ROLE "code-golf" WITH LOGIN;
 ALTER MATERIALIZED VIEW medals   OWNER TO "code-golf";
 ALTER MATERIALIZED VIEW rankings OWNER TO "code-golf";
 
+GRANT USAGE, SELECT                  ON SEQUENCE golfers_id_seq  TO "code-golf";
 GRANT SELECT, INSERT, UPDATE         ON TABLE    discord_records TO "code-golf";
 GRANT SELECT, INSERT, TRUNCATE       ON TABLE    ideas           TO "code-golf";
 GRANT SELECT                         ON TABLE    bytes_points    TO "code-golf";
 GRANT SELECT                         ON TABLE    chars_points    TO "code-golf";
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE    golfers         TO "code-golf";
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE    oauths          TO "code-golf";
 GRANT SELECT                         ON TABLE    rankings        TO "code-golf";
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE    sessions        TO "code-golf";
 GRANT SELECT, INSERT, UPDATE         ON TABLE    solutions       TO "code-golf";
