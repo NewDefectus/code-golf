@@ -43,17 +43,17 @@ func ScoresMini(w http.ResponseWriter, r *http.Request) {
 		`WITH leaderboard AS (
 		    SELECT ROW_NUMBER() OVER (ORDER BY `+scoring+`, submitted),
 		           RANK()       OVER (ORDER BY `+scoring+`),
-		           user_id,
+		           golfer_id,
 		           `+scoring+`,
 		           `+otherScoring+` `+scoring+`_`+otherScoring+`,
-		           user_id = $1 me
+		           golfer_id = $1 me
 		      FROM solutions
 		     WHERE hole = $2
 		       AND lang = $3
 		       AND scoring = $4
 		       AND NOT failing
 		), other_scoring AS (
-		    SELECT user_id,
+		    SELECT golfer_id,
 		           `+otherScoring+`,
 		           `+scoring+` `+otherScoring+`_`+scoring+`
 		      FROM solutions
@@ -70,8 +70,8 @@ func ScoresMini(w http.ResponseWriter, r *http.Request) {
 		           chars_bytes,
 		           bytes_chars
 		      FROM leaderboard
-		      JOIN users on user_id = id
-		 LEFT JOIN other_scoring ON leaderboard.user_id = other_scoring.user_id
+		      JOIN golfers on golfer_id = id
+		 LEFT JOIN other_scoring ON leaderboard.golfer_id = other_scoring.golfer_id
 		     WHERE row_number >
 		           COALESCE((SELECT row_number - $6 FROM leaderboard WHERE me), 0)
 		  ORDER BY row_number
@@ -106,7 +106,7 @@ func ScoresAll(w http.ResponseWriter, r *http.Request) {
 		           bytes,
 		           submitted
 		      FROM solutions
-		      JOIN users ON user_id = users.id
+		      JOIN golfers ON golfer_id = golfers.id
 		     WHERE NOT failing
 		       AND $1 IN ('all-holes', hole::text)
 		       AND $2 IN ('all-langs', lang::text)

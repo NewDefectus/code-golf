@@ -102,18 +102,18 @@ func Solution(w http.ResponseWriter, r *http.Request) {
 			        new_chars_joint, new_chars_rank, new_chars,
 			        beat_chars
 			   FROM save_solution(
-			            bytes   := CASE WHEN $3 = 'assembly'::lang
-			                            THEN $5
-			                            ELSE octet_length($1)
-			                            END,
-			            chars   := CASE WHEN $3 = 'assembly'::lang
-			                            THEN NULL
-			                            ELSE char_length($1)
-			                            END,
-			            code    := $1,
-			            hole    := $2,
-			            lang    := $3,
-			            user_id := $4
+			            bytes     := CASE WHEN $3 = 'assembly'::lang
+			                              THEN $5
+			                              ELSE octet_length($1)
+			                              END,
+			            chars     := CASE WHEN $3 = 'assembly'::lang
+			                              THEN NULL
+			                              ELSE char_length($1)
+			                              END,
+			            code      := $1,
+			            hole      := $2,
+			            lang      := $3,
+			            golfer_id := $4
 			        )`,
 			in.Code, in.Hole, in.Lang, golfer.ID, score.ASMBytes,
 		).Scan(
@@ -218,7 +218,7 @@ func Solution(w http.ResponseWriter, r *http.Request) {
 			db,
 			`SELECT COUNT(DISTINCT lang) = ARRAY_LENGTH(ENUM_RANGE(NULL::lang), 1)
 			   FROM solutions
-			  WHERE NOT failing AND user_id = $1`,
+			  WHERE NOT failing AND golfer_id = $1`,
 			golfer.ID,
 		) {
 			golfer.Earn(db, "polyglot")
@@ -227,11 +227,11 @@ func Solution(w http.ResponseWriter, r *http.Request) {
 		// FIXME Each one of these queries takes 50ms!
 		if queryBool(
 			db,
-			"SELECT chars_points > 9000 FROM chars_points WHERE user_id = $1",
+			"SELECT chars_points > 9000 FROM chars_points WHERE golfer_id = $1",
 			golfer.ID,
 		) || queryBool(
 			db,
-			"SELECT bytes_points > 9000 FROM bytes_points WHERE user_id = $1",
+			"SELECT bytes_points > 9000 FROM bytes_points WHERE golfer_id = $1",
 			golfer.ID,
 		) {
 			golfer.Earn(db, "its-over-9000")
@@ -247,7 +247,7 @@ func Solution(w http.ResponseWriter, r *http.Request) {
 				  WHERE NOT failing
 				    AND hole = $1
 				    AND lang IN ('java', 'javascript')
-				    AND user_id = $2`,
+				    AND golfer_id = $2`,
 				in.Hole,
 				golfer.ID,
 			) {
@@ -261,7 +261,7 @@ func Solution(w http.ResponseWriter, r *http.Request) {
 				  WHERE NOT failing
 				    AND hole = $1
 				    AND lang IN ('perl', 'raku')
-				    AND user_id = $2`,
+				    AND golfer_id = $2`,
 				in.Hole,
 				golfer.ID,
 			) {

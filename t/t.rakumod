@@ -16,7 +16,7 @@ sub dbh is export {
     my $dbh = DBIish.connect: 'Pg';
 
     $dbh.execute: 'SET client_min_messages TO WARNING';
-    $dbh.execute: 'TRUNCATE solutions, users RESTART IDENTITY CASCADE';
+    $dbh.execute: 'TRUNCATE solutions, golfers RESTART IDENTITY CASCADE';
 
     $dbh;
 }

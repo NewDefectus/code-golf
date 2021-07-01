@@ -40,10 +40,10 @@ func RankingsCheevos(w http.ResponseWriter, r *http.Request) {
 
 	rows, err := session.Database(r).Query(
 		`WITH count AS (
-		    SELECT user_id, COUNT(*), MAX(earned) earned
+		    SELECT golfer_id, COUNT(*), MAX(earned) earned
 		      FROM trophies
 		     WHERE $1 IN ('', trophy::text)
-		  GROUP BY user_id
+		  GROUP BY golfer_id
 		) SELECT count,
 		         COALESCE(CASE WHEN show_country THEN country END, ''),
 		         earned,
@@ -53,7 +53,7 @@ func RankingsCheevos(w http.ResponseWriter, r *http.Request) {
 		            ELSE RANK() OVER(ORDER BY earned)
 		         END,
 		         COUNT(*) OVER()
-		    FROM count JOIN users ON id = user_id
+		    FROM count JOIN golfers ON id = golfer_id
 		ORDER BY rank, earned
 		   LIMIT $2 OFFSET $3`,
 		cheevoID,

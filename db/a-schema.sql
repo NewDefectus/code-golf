@@ -39,6 +39,8 @@ CREATE TYPE lang AS ENUM (
 
 CREATE TYPE medal AS ENUM ('diamond', 'gold', 'silver', 'bronze');
 
+CREATE TYPE oauth AS ENUM ('github');
+
 CREATE TYPE scoring AS ENUM ('bytes', 'chars');
 
 CREATE TYPE theme AS ENUM ('auto', 'dark', 'light');
@@ -57,8 +59,8 @@ CREATE TABLE ideas (
     title       text NOT NULL UNIQUE
 );
 
-CREATE TABLE users (
-    id           int       NOT NULL PRIMARY KEY,
+CREATE TABLE golfers (
+    id           int       SERIAL PRIMARY KEY,
     admin        bool      NOT NULL DEFAULT false,
     sponsor      bool      NOT NULL DEFAULT false,
     login        citext    NOT NULL UNIQUE,
@@ -68,22 +70,32 @@ CREATE TABLE users (
     country      char(2),
     show_country bool      NOT NULL DEFAULT false,
     started      timestamp NOT NULL DEFAULT TIMEZONE('UTC', NOW()),
-    referrer_id  int                REFERENCES users(id) ON DELETE SET NULL,
+    referrer_id  int                REFERENCES golfers(id) ON DELETE SET NULL,
     theme        theme     NOT NULL DEFAULT 'auto',
     CHECK (id != referrer_id)   -- Can't refer yourself
+);
+
+CREATE TABLE oauths (
+    avatar    text,
+    golfer_id int   NOT NULL REFERENCES golfers(id) ON DELETE CASCADE,
+    id        int   NOT NULL,
+    public    bool  NOT NULL,
+    type      oauth NOT NULL,
+    username  text  NOT NULL,
+    PRIMARY KEY(golfer_id, type)
 );
 
 CREATE TABLE sessions (
     id        uuid      NOT NULL DEFAULT GEN_RANDOM_UUID() PRIMARY KEY,
     last_used timestamp NOT NULL DEFAULT TIMEZONE('UTC', NOW()),
-    user_id   int       NOT NULL REFERENCES users(id) ON DELETE CASCADE
+    golfer_id int       NOT NULL REFERENCES golfers(id) ON DELETE CASCADE
 );
 
 CREATE TABLE solutions (
     submitted timestamp NOT NULL DEFAULT TIMEZONE('UTC', NOW()),
     bytes     int       NOT NULL,
     chars     int,
-    user_id   int       NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    golfer_id int       NOT NULL REFERENCES golfers(id) ON DELETE CASCADE,
     hole      hole      NOT NULL,
     lang      lang      NOT NULL,
     scoring   scoring   NOT NULL,
@@ -95,18 +107,18 @@ CREATE TABLE solutions (
                                AND chars = char_length(code))),
     -- Solutions are limited to 400 KiB, TODO < 128 KiB (not <=).
     CHECK (octet_length(code) <= 409600),
-    PRIMARY KEY (user_id, hole, lang, scoring)
+    PRIMARY KEY (golfer_id, hole, lang, scoring)
 );
 
 CREATE TABLE trophies (
-    earned  timestamp NOT NULL DEFAULT TIMEZONE('UTC', NOW()),
-    user_id int       NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    trophy  cheevo    NOT NULL,
-    PRIMARY KEY (user_id, trophy)
+    earned    timestamp NOT NULL DEFAULT TIMEZONE('UTC', NOW()),
+    golfer_id int       NOT NULL REFERENCES golfers(id) ON DELETE CASCADE,
+    trophy    cheevo    NOT NULL,
+    PRIMARY KEY (golfer_id, trophy)
 );
 
 CREATE MATERIALIZED VIEW medals AS WITH ranks AS (
-    SELECT user_id, hole, lang, scoring,
+    SELECT golfer_id, hole, lang, scoring,
            RANK() OVER (
                PARTITION BY hole, lang, scoring
                    ORDER BY CASE WHEN scoring = 'bytes'
@@ -114,45 +126,45 @@ CREATE MATERIALIZED VIEW medals AS WITH ranks AS (
            )
       FROM solutions
      WHERE NOT failing
-) SELECT user_id, hole, lang, scoring,
+) SELECT golfer_id, hole, lang, scoring,
          (enum_range(NULL::medal))[rank + 1] medal
     FROM ranks
    WHERE rank < 4
    UNION ALL
-  SELECT MIN(user_id) user_id, hole, lang, scoring, 'diamond'::medal
+  SELECT MIN(golfer_id) golfer_id, hole, lang, scoring, 'diamond'::medal
     FROM ranks
    WHERE rank = 1
 GROUP BY hole, lang, scoring
   HAVING COUNT(*) = 1;
 
 CREATE VIEW bytes_points AS WITH ranked AS (
-    SELECT user_id,
+    SELECT golfer_id,
            RANK()   OVER (PARTITION BY hole ORDER BY MIN(bytes)),
            COUNT(*) OVER (PARTITION BY hole)
       FROM solutions
      WHERE NOT failing
        AND scoring = 'bytes'
-  GROUP BY hole, user_id
-) SELECT user_id,
+  GROUP BY hole, golfer_id
+) SELECT golfer_id,
          SUM(ROUND(((count - rank) + 1) * (1000.0 / count))) bytes_points
     FROM ranked
-GROUP BY user_id;
+GROUP BY golfer_id;
 
 CREATE VIEW chars_points AS WITH ranked AS (
-    SELECT user_id,
+    SELECT golfer_id,
            RANK()   OVER (PARTITION BY hole ORDER BY MIN(chars)),
            COUNT(*) OVER (PARTITION BY hole)
       FROM solutions
      WHERE NOT failing
        AND scoring = 'chars'
-  GROUP BY hole, user_id
-) SELECT user_id,
+  GROUP BY hole, golfer_id
+) SELECT golfer_id,
          SUM(ROUND(((count - rank) + 1) * (1000.0 / count))) chars_points
     FROM ranked
-GROUP BY user_id;
+GROUP BY golfer_id;
 
 CREATE MATERIALIZED VIEW rankings AS WITH strokes AS (
-    select hole, lang, scoring, user_id, submitted,
+    select hole, lang, scoring, golfer_id, submitted,
            case when scoring = 'bytes' then bytes else chars end strokes
       from solutions
      where not failing
@@ -169,19 +181,19 @@ CREATE MATERIALIZED VIEW rankings AS WITH strokes AS (
            (N / (N + 1)) * S + (1 / (N + 1)) * Sa Sb
       from min
       join min_per_lang using(hole, scoring)
-) select hole, lang, scoring, user_id, strokes, submitted,
+) select hole, lang, scoring, golfer_id, strokes, submitted,
          round(Sb / strokes * 1000) points,
          round(S  / strokes * 1000) points_for_lang
     from strokes
     join bayesian_estimators using(hole, lang, scoring);
 
 -- Needed to refresh concurrently
-CREATE UNIQUE INDEX   medals_key ON   medals(user_id, hole, lang, scoring, medal);
-CREATE UNIQUE INDEX rankings_key ON rankings(user_id, hole, lang, scoring);
+CREATE UNIQUE INDEX   medals_key ON   medals(golfer_id, hole, lang, scoring, medal);
+CREATE UNIQUE INDEX rankings_key ON rankings(golfer_id, hole, lang, scoring);
 
 -- Used by /stats
-CREATE INDEX solutions_hole_key ON solutions(hole, user_id) WHERE NOT failing;
-CREATE INDEX solutions_lang_key ON solutions(lang, user_id) WHERE NOT failing;
+CREATE INDEX solutions_hole_key ON solutions(hole, golfer_id) WHERE NOT failing;
+CREATE INDEX solutions_lang_key ON solutions(lang, golfer_id) WHERE NOT failing;
 
 CREATE ROLE "code-golf" WITH LOGIN;
 
@@ -193,8 +205,8 @@ GRANT SELECT, INSERT, UPDATE         ON TABLE    discord_records TO "code-golf";
 GRANT SELECT, INSERT, TRUNCATE       ON TABLE    ideas           TO "code-golf";
 GRANT SELECT                         ON TABLE    bytes_points    TO "code-golf";
 GRANT SELECT                         ON TABLE    chars_points    TO "code-golf";
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE    golfers         TO "code-golf";
 GRANT SELECT                         ON TABLE    rankings        TO "code-golf";
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE    sessions        TO "code-golf";
 GRANT SELECT, INSERT, UPDATE         ON TABLE    solutions       TO "code-golf";
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE    trophies        TO "code-golf";
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE    users           TO "code-golf";

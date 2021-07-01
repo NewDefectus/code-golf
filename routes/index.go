@@ -80,12 +80,12 @@ func Index(w http.ResponseWriter, r *http.Request) {
 		`WITH ranks AS (
 		    SELECT hole,
 		           RANK() OVER (PARTITION BY hole ORDER BY `+data.Scoring+`),
-		           user_id
+		           golfer_id
 		      FROM solutions
 		     WHERE scoring = $2
 		       AND NOT failing
 		) SELECT COUNT(*),
-		         (SELECT COALESCE(MIN(rank), 0) FROM ranks WHERE hole = r.hole AND user_id = $1),
+		         (SELECT COALESCE(MIN(rank), 0) FROM ranks WHERE hole = r.hole AND golfer_id = $1),
 		         hole
 		    FROM ranks r
 		GROUP BY hole`,

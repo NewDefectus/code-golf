@@ -11,7 +11,7 @@ import (
 // GolferCancelDelete serves POST /golfer/cancel-delete
 func GolferCancelDelete(w http.ResponseWriter, r *http.Request) {
 	if _, err := session.Database(r).Exec(
-		"UPDATE users SET delete = NULL WHERE id = $1",
+		"UPDATE golfers SET delete = NULL WHERE id = $1",
 		session.Golfer(r).ID,
 	); err != nil {
 		panic(err)
@@ -23,7 +23,7 @@ func GolferCancelDelete(w http.ResponseWriter, r *http.Request) {
 // GolferDelete serves POST /golfer/delete
 func GolferDelete(w http.ResponseWriter, r *http.Request) {
 	if _, err := session.Database(r).Exec(
-		"UPDATE users SET delete = TIMEZONE('UTC', NOW()) + INTERVAL '7 days' WHERE id = $1",
+		"UPDATE golfers SET delete = TIMEZONE('UTC', NOW()) + INTERVAL '7 days' WHERE id = $1",
 		session.Golfer(r).ID,
 	); err != nil {
 		panic(err)
@@ -69,10 +69,10 @@ func GolferSettingsPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if _, err := session.Database(r).Exec(
-		`UPDATE users
+		`UPDATE golfers
 		    SET country = $1,
 		         keymap = $2,
-		    referrer_id = (SELECT id FROM users WHERE login = $3 AND id != $7),
+		    referrer_id = (SELECT id FROM golfers WHERE login = $3 AND id != $7),
 		   show_country = $4,
 		          theme = $5,
 		      time_zone = $6

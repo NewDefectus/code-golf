@@ -98,13 +98,13 @@ func GetInfo(db *sql.DB, name string) *GolferInfo {
 
 	if err := db.QueryRow(
 		`WITH medals AS (
-		   SELECT user_id,
+		   SELECT golfer_id,
 		          COUNT(*) FILTER (WHERE medal = 'diamond') diamond,
 		          COUNT(*) FILTER (WHERE medal = 'gold'   ) gold,
 		          COUNT(*) FILTER (WHERE medal = 'silver' ) silver,
 		          COUNT(*) FILTER (WHERE medal = 'bronze' ) bronze
 		     FROM medals
-		 GROUP BY user_id
+		 GROUP BY golfer_id
 		)  SELECT admin,
 		          COALESCE(bronze, 0),
 		          COALESCE(CASE WHEN show_country THEN country END, ''),
@@ -112,21 +112,21 @@ func GetInfo(db *sql.DB, name string) *GolferInfo {
 		          COALESCE(gold, 0),
 		          (SELECT COUNT(DISTINCT hole)
 		             FROM solutions
-		            WHERE user_id = id AND NOT FAILING),
+		            WHERE golfer_id = id AND NOT FAILING),
 		          id,
 		          (SELECT COUNT(DISTINCT lang)
 		             FROM solutions
-		            WHERE user_id = id AND NOT FAILING),
+		            WHERE golfer_id = id AND NOT FAILING),
 		          login,
 		          COALESCE(bytes_points, 0),
 		          COALESCE(chars_points, 0),
 		          COALESCE(silver, 0),
 		          sponsor,
-		          (SELECT COUNT(*) FROM trophies WHERE user_id = id)
-		     FROM users
-		LEFT JOIN medals ON id = medals.user_id
-		LEFT JOIN bytes_points ON id = bytes_points.user_id
-		LEFT JOIN chars_points ON id = chars_points.user_id
+		          (SELECT COUNT(*) FROM trophies WHERE golfer_id = id)
+		     FROM golfers
+		LEFT JOIN medals ON id = medals.golfer_id
+		LEFT JOIN bytes_points ON id = bytes_points.golfer_id
+		LEFT JOIN chars_points ON id = chars_points.golfer_id
 		    WHERE login = $1`,
 		name,
 	).Scan(

@@ -38,8 +38,8 @@ func Admin(w http.ResponseWriter, r *http.Request) {
 
 	rows, err := db.Query(
 		` SELECT login, MAX(last_used)
-		    FROM sessions JOIN users ON user_id = users.id
-		   WHERE user_id != $1
+		    FROM sessions JOIN golfers ON golfer_id = golfers.id
+		   WHERE golfer_id != $1
 		     AND last_used > TIMEZONE('UTC', NOW()) - INTERVAL '1 day'
 		GROUP BY login
 		ORDER BY max DESC`,
@@ -100,7 +100,7 @@ func Admin(w http.ResponseWriter, r *http.Request) {
 
 	rows, err = db.Query(
 		`SELECT COALESCE(country, ''), COUNT(*), COUNT(*) / SUM(COUNT(*)) OVER () * 100
-		   FROM users GROUP BY COALESCE(country, '')`,
+		   FROM golfers GROUP BY COALESCE(country, '')`,
 	)
 	if err != nil {
 		panic(err)

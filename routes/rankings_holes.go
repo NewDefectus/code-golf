@@ -44,7 +44,7 @@ func RankingsHoles(w http.ResponseWriter, r *http.Request) {
 	var distinct, table string
 
 	if data.HoleID == "all" {
-		distinct = "DISTINCT ON (hole, user_id)"
+		distinct = "DISTINCT ON (hole, golfer_id)"
 		table = "summed_leaderboard"
 	} else {
 		table = "scored_leaderboard"
@@ -56,14 +56,14 @@ func RankingsHoles(w http.ResponseWriter, r *http.Request) {
 		         hole,
 		         submitted,
 		         `+data.Scoring+` strokes,
-		         user_id,
+		         golfer_id,
 		         lang
 		    FROM solutions
 		   WHERE NOT failing
 		     AND $1 IN ('all', hole::text)
 		     AND $2 IN ('all', lang::text)
 		     AND scoring = $3
-		ORDER BY hole, user_id, `+data.Scoring+`, submitted
+		ORDER BY hole, golfer_id, `+data.Scoring+`, submitted
 		), scored_leaderboard AS (
 		  SELECT l.hole,
 		         1 holes,
@@ -75,17 +75,17 @@ func RankingsHoles(w http.ResponseWriter, r *http.Request) {
 		         ) points,
 		         strokes,
 		         submitted,
-		         l.user_id
+		         l.golfer_id
 		    FROM leaderboard l
 		), summed_leaderboard AS (
-		  SELECT user_id,
+		  SELECT golfer_id,
 		         COUNT(*)       holes,
 		         ''             lang,
 		         SUM(points)    points,
 		         SUM(strokes)   strokes,
 		         MAX(submitted) submitted
 		    FROM scored_leaderboard
-		GROUP BY user_id
+		GROUP BY golfer_id
 		) SELECT COALESCE(CASE WHEN show_country THEN country END, ''),
 		         holes,
 		         lang,
@@ -96,7 +96,7 @@ func RankingsHoles(w http.ResponseWriter, r *http.Request) {
 		         submitted,
 		         COUNT(*) OVER()
 		    FROM `+table+`
-		    JOIN users on user_id = id
+		    JOIN golfers on golfer_id = id
 		ORDER BY points DESC, strokes, submitted
 		   LIMIT $4 OFFSET $5`,
 		data.HoleID,

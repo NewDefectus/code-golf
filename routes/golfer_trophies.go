@@ -26,8 +26,8 @@ func GolferCheevos(w http.ResponseWriter, r *http.Request) {
 		`WITH count AS (
 		    SELECT trophy, COUNT(*) FROM trophies GROUP BY trophy
 		), earned AS (
-		    SELECT trophy, earned FROM trophies WHERE user_id = $1
-		) SELECT *, count * 100 / (SELECT COUNT(*) FROM users)
+		    SELECT trophy, earned FROM trophies WHERE golfer_id = $1
+		) SELECT *, count * 100 / (SELECT COUNT(*) FROM golfers)
 		    FROM count LEFT JOIN earned USING(trophy)`,
 		golfer.ID,
 	)

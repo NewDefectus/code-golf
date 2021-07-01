@@ -5,10 +5,10 @@ throws-like { $client.get: 'https://app:1443/golfer/settings' },
 
 my $dbh = dbh;
 
-$dbh.execute: "INSERT INTO users (id, login) VALUES (123, 'foo'), (456, 'bar')";
+$dbh.execute: "INSERT INTO golfers (id, login) VALUES (123, 'foo'), (456, 'bar')";
 
 my $session = $dbh.execute(
-    'INSERT INTO sessions (user_id) VALUES (123) RETURNING id').row.head;
+    'INSERT INTO sessions (golfer_id) VALUES (123) RETURNING id').row.head;
 
 is-deeply settings, {
     :country(Str), :keymap<default>, :referrer_id(Int), :!show_country,
@@ -32,7 +32,7 @@ try post %( |%args, :referrer<BaR> );   # Case-insensitive
 
 is-deeply settings<referrer_id>, 456, 'referrer_id is 456';
 
-$dbh.execute: 'DELETE FROM users WHERE id = 456';   # ON DELETE SET NULL
+$dbh.execute: 'DELETE FROM golfers WHERE id = 456';   # ON DELETE SET NULL
 
 is-deeply settings<referrer_id>, Int, 'referrer_id is NULL';
 
@@ -43,7 +43,7 @@ is-deeply settings<referrer_id>, Int, 'referrer_id is NULL';
 
 sub settings { $dbh.execute(q:to/SQL/).row :hash }
     SELECT country, keymap, referrer_id, show_country, theme, time_zone
-      FROM users
+      FROM golfers
      WHERE id = 123
 SQL
 

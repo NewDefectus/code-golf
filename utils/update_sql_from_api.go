@@ -91,7 +91,7 @@ func main() {
 	}
 
 	for login, userID := range userMap {
-		if _, err := tx.Exec("INSERT INTO users (id, login) VALUES($1, $2)",
+		if _, err := tx.Exec("INSERT INTO golfers (id, login) VALUES($1, $2)",
 			userID, login,
 		); err != nil {
 			panic(err)
@@ -100,10 +100,10 @@ func main() {
 
 	for i, info := range infoList {
 		if _, err := tx.Exec(
-			`INSERT INTO solutions (  bytes,     chars,    code, hole, lang,
-			                        scoring, submitted, user_id)
-			                VALUES (     $1,        $2,      $3,   $4,   $5,
-			                             $6,        $7,      $8)`,
+			`INSERT INTO solutions (  bytes,     chars,      code, hole, lang,
+			                        scoring, submitted, golfer_id)
+			                VALUES (     $1,        $2,        $3,   $4,   $5,
+			                             $6,        $7,        $8)`,
 			info.Bytes,
 			info.Chars,
 			makeCode(info.Chars, info.Bytes),

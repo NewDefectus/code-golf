@@ -22,11 +22,11 @@ func GolferHandler(next http.Handler) http.Handler {
 			if err := session.Database(r).QueryRow(
 				`WITH golfer AS (
 				    UPDATE sessions SET last_used = DEFAULT WHERE id = $1
-				 RETURNING user_id
+				 RETURNING golfer_id
 				), failing AS (
 				    SELECT hole, lang
 				      FROM solutions
-				      JOIN golfer USING(user_id)
+				      JOIN golfer USING(golfer_id)
 				     WHERE failing
 				  GROUP BY hole, lang
 				  ORDER BY hole, lang
@@ -44,12 +44,12 @@ func GolferHandler(next http.Handler) http.Handler {
 				          ARRAY(
 				              SELECT trophy
 				                FROM trophies
-				               WHERE user_id = u.id
+				               WHERE golfer_id = u.id
 				            ORDER BY trophy
 				          )
-				     FROM users  u
-				     JOIN golfer g ON u.id = g.user_id
-				LEFT JOIN users  r ON r.id = u.referrer_id`,
+				     FROM golfers u
+				     JOIN golfer  g ON u.id = g.golfer_id
+				LEFT JOIN golfers r ON r.id = u.referrer_id`,
 				uuid.FromStringOrNil(cookie.Value),
 			).Scan(
 				&golfer.Admin,

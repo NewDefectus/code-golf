@@ -181,13 +181,13 @@ func main() {
 				},
 				{
 					"superfluous users",
-					`DELETE FROM users u
-					  WHERE NOT EXISTS (SELECT FROM sessions WHERE user_id = u.id)
-						AND NOT EXISTS (SELECT FROM trophies WHERE user_id = u.id)`,
+					`DELETE FROM golfers u
+					  WHERE NOT EXISTS (SELECT FROM sessions WHERE golfer_id = u.id)
+						AND NOT EXISTS (SELECT FROM trophies WHERE golfer_id = u.id)`,
 				},
 				{
 					"users scheduled for deletion",
-					"DELETE FROM users WHERE delete < TIMEZONE('UTC', NOW())",
+					"DELETE FROM golfers WHERE delete < TIMEZONE('UTC', NOW())",
 				},
 			} {
 				if res, err := db.Exec(job.sql); err != nil {

@@ -42,7 +42,7 @@ func GolferHoles(w http.ResponseWriter, r *http.Request) {
 
 	rows, err := session.Database(r).Query(
 		`WITH matrix AS (
-		  SELECT user_id,
+		  SELECT golfer_id,
 		         hole,
 		         lang,
 		         RANK() OVER (PARTITION BY hole, lang ORDER BY `+data.Scorings[0]+`)
@@ -50,7 +50,7 @@ func GolferHoles(w http.ResponseWriter, r *http.Request) {
 		   WHERE NOT failing
 		     AND scoring = $2
 		), other_matrix AS (
-		  SELECT user_id,
+		  SELECT golfer_id,
 		         hole,
 		         lang,
 		         RANK() OVER (PARTITION BY hole, lang ORDER BY `+data.Scorings[1]+`) other_rank
@@ -59,8 +59,8 @@ func GolferHoles(w http.ResponseWriter, r *http.Request) {
 		     AND scoring = $3
 		) SELECT hole, lang, COALESCE(rank, 0), COALESCE(other_rank, 0)
 		    FROM matrix
-	   FULL JOIN other_matrix USING (user_id, hole, lang)
-		   WHERE user_id = $1`,
+	   FULL JOIN other_matrix USING (golfer_id, hole, lang)
+		   WHERE golfer_id = $1`,
 		golfer.ID,
 		data.Scorings[0],
 		data.Scorings[1],

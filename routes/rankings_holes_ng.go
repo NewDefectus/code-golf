@@ -49,21 +49,21 @@ func RankingsHolesNG(w http.ResponseWriter, r *http.Request) {
 	if data.HoleID == "all" && data.LangID == "all" {
 		rows, err = session.Database(r).Query(
 			`WITH foo AS (
-			    SELECT user_id, hole, lang, points, strokes, submitted,
+			    SELECT golfer_id, hole, lang, points, strokes, submitted,
 			           ROW_NUMBER() OVER (
-			               PARTITION BY user_id, hole ORDER BY points DESC
+			               PARTITION BY golfer_id, hole ORDER BY points DESC
 			           )
 			      FROM rankings
 			     WHERE scoring = $1
 			), summed AS (
-			    SELECT user_id,
+			    SELECT golfer_id,
 			           COUNT(*)       holes,
 			           SUM(points)    points,
 			           SUM(strokes)   strokes,
 			           MAX(submitted) submitted
 			      FROM foo
 			     WHERE row_number = 1
-			  GROUP BY user_id
+			  GROUP BY golfer_id
 			) SELECT COALESCE(CASE WHEN show_country THEN country END, ''),
 			         holes,
 			         $1,
@@ -74,7 +74,7 @@ func RankingsHolesNG(w http.ResponseWriter, r *http.Request) {
 			         submitted,
 			         COUNT(*) OVER()
 			    FROM summed
-			    JOIN users ON user_id = id
+			    JOIN golfers ON golfer_id = id
 			ORDER BY rank, submitted
 			   LIMIT $2 OFFSET $3`,
 			data.Scoring,
@@ -84,7 +84,7 @@ func RankingsHolesNG(w http.ResponseWriter, r *http.Request) {
 	} else if data.HoleID == "all" {
 		rows, err = session.Database(r).Query(
 			`WITH summed AS (
-			    SELECT user_id,
+			    SELECT golfer_id,
 			           COUNT(*)             holes,
 			           SUM(points_for_lang) points,
 			           SUM(strokes)         strokes,
@@ -92,7 +92,7 @@ func RankingsHolesNG(w http.ResponseWriter, r *http.Request) {
 			      FROM rankings
 			     WHERE lang    = $1
 			       AND scoring = $2
-			  GROUP BY user_id
+			  GROUP BY golfer_id
 			) SELECT COALESCE(CASE WHEN show_country THEN country END, ''),
 			         holes,
 			         $1,
@@ -103,7 +103,7 @@ func RankingsHolesNG(w http.ResponseWriter, r *http.Request) {
 			         submitted,
 			         COUNT(*) OVER()
 			    FROM summed
-			    JOIN users ON user_id = id
+			    JOIN golfers ON golfer_id = id
 			ORDER BY rank, submitted
 			   LIMIT $3 OFFSET $4`,
 			data.LangID,
@@ -123,7 +123,7 @@ func RankingsHolesNG(w http.ResponseWriter, r *http.Request) {
 			         submitted,
 			         COUNT(*) OVER()
 			    FROM rankings
-			    JOIN users ON user_id = id
+			    JOIN golfers ON golfer_id = id
 			   WHERE hole = $1 AND scoring = $2
 			ORDER BY rank, submitted
 			   LIMIT $3 OFFSET $4`,
@@ -144,7 +144,7 @@ func RankingsHolesNG(w http.ResponseWriter, r *http.Request) {
 			         submitted,
 			         COUNT(*) OVER()
 			    FROM rankings
-			    JOIN users ON user_id = id
+			    JOIN golfers ON golfer_id = id
 			   WHERE hole = $1 AND lang = $2 AND scoring = $3
 			ORDER BY rank, submitted
 			   LIMIT $4 OFFSET $5`,

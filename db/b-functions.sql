@@ -1,6 +1,6 @@
-CREATE FUNCTION earn(INOUT earned cheevo[], cheevo cheevo, user_id int) AS $$
+CREATE FUNCTION earn(INOUT earned cheevo[], cheevo cheevo, golfer_id int) AS $$
 BEGIN
-    INSERT INTO trophies VALUES (DEFAULT, user_id, cheevo)
+    INSERT INTO trophies VALUES (DEFAULT, golfer_id, cheevo)
              ON CONFLICT DO NOTHING;
 
     IF found THEN
@@ -11,19 +11,19 @@ $$ LANGUAGE plpgsql;
 
 CREATE TYPE hole_rank_ret AS (strokes int, rank int, joint bool);
 
-CREATE FUNCTION hole_rank(hole hole, lang lang, scoring scoring, user_id int)
+CREATE FUNCTION hole_rank(hole hole, lang lang, scoring scoring, golfer_id int)
 RETURNS SETOF hole_rank_ret AS $$
 BEGIN
     RETURN QUERY EXECUTE FORMAT(
         'WITH ranks AS (
-            SELECT %I, RANK() OVER (ORDER BY %I), user_id
+            SELECT %I, RANK() OVER (ORDER BY %I), golfer_id
               FROM solutions
              WHERE NOT failing AND hole = $1 AND lang = $2 AND scoring = $3
         ) SELECT %I, rank::int,
                  (SELECT COUNT(*) != 1 FROM ranks r WHERE r.rank = ranks.rank)
-            FROM ranks WHERE user_id = $4',
+            FROM ranks WHERE golfer_id = $4',
         scoring, scoring, scoring
-    ) USING hole, lang, scoring, user_id;
+    ) USING hole, lang, scoring, golfer_id;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -46,7 +46,7 @@ CREATE TYPE save_solution_ret AS (
 );
 
 CREATE FUNCTION save_solution(
-    bytes int, chars int, code text, hole hole, lang lang, user_id int
+    bytes int, chars int, code text, hole hole, lang lang, golfer_id int
 ) RETURNS save_solution_ret AS $$
 #variable_conflict use_variable
 DECLARE
@@ -58,13 +58,13 @@ BEGIN
     -- Ensure we're the only one messing with solutions.
     LOCK TABLE solutions IN EXCLUSIVE MODE;
 
-    rank                := hole_rank(hole, lang, 'bytes', user_id);
+    rank                := hole_rank(hole, lang, 'bytes', golfer_id);
     ret.old_bytes       := rank.strokes;
     ret.old_bytes_joint := rank.joint;
     ret.old_bytes_rank  := rank.rank;
 
     IF chars IS NOT NULL THEN
-        rank                := hole_rank(hole, lang, 'chars', user_id);
+        rank                := hole_rank(hole, lang, 'chars', golfer_id);
         ret.old_chars       := rank.strokes;
         ret.old_chars_joint := rank.joint;
         ret.old_chars_rank  := rank.rank;
@@ -73,8 +73,8 @@ BEGIN
     -- Update the code if it's the same length or less, but only update the
     -- submitted time if the solution is shorter. This avoids a user moving
     -- down the leaderboard by matching their personal best.
-    INSERT INTO solutions (bytes, chars, code, hole, lang, scoring, user_id)
-         VALUES           (bytes, chars, code, hole, lang, 'bytes', user_id)
+    INSERT INTO solutions (bytes, chars, code, hole, lang, scoring, golfer_id)
+         VALUES           (bytes, chars, code, hole, lang, 'bytes', golfer_id)
     ON CONFLICT ON CONSTRAINT solutions_pkey
     DO UPDATE SET failing = false,
                     bytes = CASE
@@ -91,8 +91,8 @@ BEGIN
                     THEN excluded.submitted ELSE solutions.submitted END;
 
     IF chars IS NOT NULL THEN
-        INSERT INTO solutions (bytes, chars, code, hole, lang, scoring, user_id)
-             VALUES           (bytes, chars, code, hole, lang, 'chars', user_id)
+        INSERT INTO solutions (bytes, chars, code, hole, lang, scoring, golfer_id)
+             VALUES           (bytes, chars, code, hole, lang, 'chars', golfer_id)
         ON CONFLICT ON CONSTRAINT solutions_pkey
         DO UPDATE SET failing = false,
                         bytes = CASE
@@ -109,13 +109,13 @@ BEGIN
                         THEN excluded.submitted ELSE solutions.submitted END;
     END IF;
 
-    rank                := hole_rank(hole, lang, 'bytes', user_id);
+    rank                := hole_rank(hole, lang, 'bytes', golfer_id);
     ret.new_bytes       := rank.strokes;
     ret.new_bytes_joint := rank.joint;
     ret.new_bytes_rank  := rank.rank;
 
     IF chars IS NOT NULL THEN
-        rank                := hole_rank(hole, lang, 'chars', user_id);
+        rank                := hole_rank(hole, lang, 'chars', golfer_id);
         ret.new_chars       := rank.strokes;
         ret.new_chars_joint := rank.joint;
         ret.new_chars_rank  := rank.rank;
@@ -145,53 +145,53 @@ BEGIN
 
     -- Earn cheevos.
     SELECT COUNT(DISTINCT solutions.hole) INTO holes
-      FROM solutions WHERE NOT failing AND solutions.user_id = user_id;
+      FROM solutions WHERE NOT failing AND solutions.golfer_id = golfer_id;
 
-    IF holes >= 1  THEN earned := earn(earned, 'hello-world',       user_id); END IF;
-    IF holes >= 11 THEN earned := earn(earned, 'up-to-eleven',      user_id); END IF;
-    IF holes >= 13 THEN earned := earn(earned, 'bakers-dozen',      user_id); END IF;
-    IF holes >= 19 THEN earned := earn(earned, 'the-watering-hole', user_id); END IF;
-    IF holes >= 40 THEN earned := earn(earned, 'forty-winks',       user_id); END IF;
-    IF holes >= 42 THEN earned := earn(earned, 'dont-panic',        user_id); END IF;
-    if holes >= 50 THEN earned := earn(earned, 'bullseye',          user_id); END IF;
+    IF holes >= 1  THEN earned := earn(earned, 'hello-world',       golfer_id); END IF;
+    IF holes >= 11 THEN earned := earn(earned, 'up-to-eleven',      golfer_id); END IF;
+    IF holes >= 13 THEN earned := earn(earned, 'bakers-dozen',      golfer_id); END IF;
+    IF holes >= 19 THEN earned := earn(earned, 'the-watering-hole', golfer_id); END IF;
+    IF holes >= 40 THEN earned := earn(earned, 'forty-winks',       golfer_id); END IF;
+    IF holes >= 42 THEN earned := earn(earned, 'dont-panic',        golfer_id); END IF;
+    if holes >= 50 THEN earned := earn(earned, 'bullseye',          golfer_id); END IF;
 
     IF hole = 'brainfuck' AND lang = 'brainfuck' THEN
-        earned := earn(earned, 'inception', user_id);
+        earned := earn(earned, 'inception', golfer_id);
     END IF;
 
     IF hole = 'fizz-buzz' THEN
-        earned := earn(earned, 'interview-ready', user_id);
+        earned := earn(earned, 'interview-ready', golfer_id);
     END IF;
 
     IF hole = 'quine' THEN
-        earned := earn(earned, 'solve-quine', user_id);
+        earned := earn(earned, 'solve-quine', golfer_id);
 
         IF lang = 'python' THEN
-            earned := earn(earned, 'ouroboros', user_id);
+            earned := earn(earned, 'ouroboros', golfer_id);
         END IF;
     END IF;
 
     IF hole = 'poker' AND lang = 'fish' THEN
-        earned := earn(earned, 'fish-n-chips', user_id);
+        earned := earn(earned, 'fish-n-chips', golfer_id);
     END IF;
 
     IF hole = 'ten-pin-bowling' AND lang = 'cobol' THEN
-        earned := earn(earned, 'cobowl', user_id);
+        earned := earn(earned, 'cobowl', golfer_id);
     END IF;
 
     IF lang = 'php' THEN
-        earned := earn(earned, 'elephpant-in-the-room', user_id);
+        earned := earn(earned, 'elephpant-in-the-room', golfer_id);
     END IF;
 
     IF hole = 'seven-segment' AND lang = 'assembly' THEN
-        earned := earn(earned, 'assembly-required', user_id);
+        earned := earn(earned, 'assembly-required', golfer_id);
     END IF;
 
     IF (SELECT COUNT(DISTINCT solutions.code) > 1 FROM solutions
-        WHERE   solutions.user_id = user_id
+        WHERE   solutions.golfer_id = golfer_id
         AND     solutions.hole = hole
         AND     solutions.lang = lang) THEN
-        earned := earn(earned, 'different-strokes', user_id);
+        earned := earn(earned, 'different-strokes', golfer_id);
     END IF;
 
     ret.earned := earned;

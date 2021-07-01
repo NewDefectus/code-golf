@@ -35,7 +35,7 @@ func Stats(w http.ResponseWriter, r *http.Request) {
 	db := session.Database(r)
 
 	if err := db.QueryRow(
-		"SELECT COUNT(DISTINCT user_id) FROM trophies",
+		"SELECT COUNT(DISTINCT golfer_id) FROM trophies",
 	).Scan(&data.Golfers); err != nil {
 		panic(err)
 	}
@@ -51,7 +51,7 @@ func Stats(w http.ResponseWriter, r *http.Request) {
 			`SELECT RANK() OVER (ORDER BY COUNT(*) DESC, ` + fact + `),
 			         ` + fact + `,
 			         COUNT(*),
-			         COUNT(DISTINCT user_id)
+			         COUNT(DISTINCT golfer_id)
 			    FROM solutions
 			GROUP BY ` + fact,
 		)

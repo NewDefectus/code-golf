@@ -91,11 +91,11 @@ func AdminSolutionsRun(w http.ResponseWriter, r *http.Request) {
 				if s.Pass == s.failing {
 					if _, err := db.Exec(
 						`UPDATE solutions
-						    SET failing = $1
-						  WHERE code    = $2
-						    AND hole    = $3
-						    AND lang    = $4
-						    AND user_id = $5`,
+						    SET failing   = $1
+						  WHERE code      = $2
+						    AND hole      = $3
+						    AND lang      = $4
+						    AND golfer_id = $5`,
 						!s.Pass,
 						s.code,
 						s.HoleID,
@@ -137,9 +137,9 @@ func getSolutions(r *http.Request) chan solution {
 
 		rows, err := session.Database(r).QueryContext(
 			r.Context(),
-			` SELECT DISTINCT code, failing, login, user_id, hole, lang
+			` SELECT DISTINCT code, failing, login, golfer_id, hole, lang
 			    FROM solutions
-			    JOIN users   ON id = user_id
+			    JOIN golfers ON id = golfer_id
 			   WHERE failing IN (true, $1)
 			     AND (login = $2 OR $2 = '')
 			     AND (hole  = $3 OR $3 IS NULL)

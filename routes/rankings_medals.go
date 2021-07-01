@@ -41,7 +41,7 @@ func RankingsMedals(w http.ResponseWriter, r *http.Request) {
 
 	rows, err := session.Database(r).Query(
 		`WITH counts AS (
-		    SELECT user_id,
+		    SELECT golfer_id,
 		           COUNT(*) FILTER (WHERE medal = 'diamond') diamond,
 		           COUNT(*) FILTER (WHERE medal = 'gold'   ) gold,
 		           COUNT(*) FILTER (WHERE medal = 'silver' ) silver,
@@ -50,7 +50,7 @@ func RankingsMedals(w http.ResponseWriter, r *http.Request) {
 		     WHERE $1 IN ('all', hole::text)
 		       AND $2 IN ('all', lang::text)
 		       AND $3 IN ('all', scoring::text)
-		  GROUP BY user_id
+		  GROUP BY golfer_id
 		) SELECT RANK() OVER(
 		             ORDER BY gold DESC, diamond DESC, silver DESC, bronze DESC
 		         ),
@@ -62,7 +62,7 @@ func RankingsMedals(w http.ResponseWriter, r *http.Request) {
 		         bronze,
 		         COUNT(*) OVER()
 		    FROM counts
-		    JOIN users ON id = user_id
+		    JOIN golfers ON id = golfer_id
 		ORDER BY rank, login
 		   LIMIT $4 OFFSET $5`,
 		data.HoleID,

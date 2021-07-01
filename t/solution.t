@@ -19,10 +19,10 @@ is-deeply post-solution(:code($code-long))<
 
 my $dbh = dbh;
 
-$dbh.execute: "INSERT INTO users (id, login) VALUES (123, 'test')";
+$dbh.execute: "INSERT INTO golfers (id, login) VALUES (123, 'test')";
 
 my $session = $dbh.execute(
-    'INSERT INTO sessions (user_id) VALUES (123) RETURNING id').row.head;
+    'INSERT INTO sessions (golfer_id) VALUES (123) RETURNING id').row.head;
 
 subtest 'Failing solution' => {
     nok post-solution( :$session :code('say 1') )<Pass>, 'Solution fails';

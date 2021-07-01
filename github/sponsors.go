@@ -32,13 +32,13 @@ func sponsors(db *sql.DB) (limits []rateLimit) {
 
 	defer tx.Rollback()
 
-	if _, err := tx.Exec("UPDATE users SET sponsor = false"); err != nil {
+	if _, err := tx.Exec("UPDATE golfers SET sponsor = false"); err != nil {
 		panic(err)
 	}
 
 	for _, node := range query.Viewer.SponsorshipsAsMaintainer.Nodes {
 		if _, err := tx.Exec(
-			"UPDATE users SET sponsor = true WHERE id = $1",
+			"UPDATE golfers SET sponsor = true WHERE id = $1",
 			node.SponsorEntity.User.DatabaseID,
 		); err != nil {
 			panic(err)

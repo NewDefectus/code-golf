@@ -21,14 +21,14 @@ func RankingsSolutions(w http.ResponseWriter, r *http.Request) {
 
 	rows, err := session.Database(r).Query(
 		`WITH solutions AS (
-		    SELECT user_id,
+		    SELECT golfer_id,
 		           COUNT(*),
 		           COUNT(DISTINCT lang) langs,
 		           SUM(bytes) bytes,
 		           COALESCE(SUM(chars), 0) chars
 		      FROM solutions
 		     WHERE NOT failing
-		  GROUP BY user_id
+		  GROUP BY golfer_id
 		) SELECT bytes,
 		         TO_CHAR(bytes::decimal / count, 'FM999,990.0'),
 		         chars,
@@ -40,7 +40,7 @@ func RankingsSolutions(w http.ResponseWriter, r *http.Request) {
 		         RANK() OVER(ORDER BY count DESC),
 		         COUNT(*) OVER ()
 		    FROM solutions
-		    JOIN users on id = user_id
+		    JOIN golfers ON id = golfer_id
 		ORDER BY rank, bytes, chars, login
 		   LIMIT $1 OFFSET $2`,
 		pager.PerPage,

@@ -36,7 +36,7 @@ func Recent(w http.ResponseWriter, r *http.Request) {
                case when scoring = 'chars' then chars else bytes end strokes,
                submitted
           FROM solutions
-          JOIN users ON user_id = users.id
+          JOIN golfers ON golfer_id = golfers.id
          WHERE NOT failing
            AND $1 IN ('all-langs', lang::text)
      )  SELECT t1.hole,
