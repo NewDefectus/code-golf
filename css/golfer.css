@@ -11,7 +11,7 @@ h1 {
     flex-wrap: wrap;
     font-weight: bold;
     margin-bottom: -.25rem;
-    padding: .75rem .75rem 0;
+    padding: .15rem .75rem 0;
 }
 
 #badges div {
@@ -26,6 +26,22 @@ h1 {
 #badges p:last-child {
     border: 2px solid var(--badge-background);
     border-left: 0;
+}
+
+#connections {
+    font-weight: bold;
+    margin: .2rem .5rem;
+}
+
+#connections p {
+    padding-left: .5rem;
+}
+
+#connections svg {
+    display: inline-block;
+    height: 1.2rem;
+    vertical-align: text-top;
+    width: 1.2rem;
 }
 
 #profile {

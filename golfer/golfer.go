@@ -76,6 +76,9 @@ type GolferInfo struct {
 	// Count of cheevos/holes/langs available
 	CheevosTotal, HolesTotal, LangsTotal int
 
+	// Public connections
+	Connections map[string]string
+
 	// Start date
 	TeedOff time.Time
 }
@@ -92,6 +95,7 @@ type RankUpdate struct {
 func GetInfo(db *sql.DB, name string) *GolferInfo {
 	info := GolferInfo{
 		CheevosTotal: len(cheevo.List),
+		Connections:  map[string]string{},
 		HolesTotal:   len(hole.List),
 		LangsTotal:   len(lang.List),
 	}
@@ -148,6 +152,23 @@ func GetInfo(db *sql.DB, name string) *GolferInfo {
 		return nil
 	} else if err != nil {
 		panic(err)
+	}
+
+	connections, err := db.Query(
+		`SELECT type, username FROM oauths WHERE golfer_id = $1 AND public`,
+		info.ID,
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	for connections.Next() {
+		var connectionType, username string
+		if err := connections.Scan(&connectionType, &username); err != nil {
+			panic(err)
+		}
+
+		info.Connections[connectionType] = username
 	}
 
 	// TODO

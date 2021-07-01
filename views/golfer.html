@@ -19,6 +19,15 @@
             • <span title="Bronze medals">🥉 {{ comma .Bronze  }}</span>
     </div>
 
+    <div id=connections>
+        {{ range $website, $username := .Connections }}
+        <p>
+            {{ svg $website }}
+            {{ $username }}
+        </p>
+        {{ end }}
+    </div>
+
     <div id=badges>
     {{ if .Admin }}
         <div><p>🔑<p class=orange>Admin</div>
